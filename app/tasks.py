@@ -2,7 +2,7 @@ import time
 from datetime import datetime
 
 import dramatiq
-from broker import rabbitmq_broker
+from .broker import rabbitmq_broker
 
 
 

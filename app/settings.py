@@ -1,5 +1,10 @@
+import os
+from pathlib import Path
 import pydantic
 from pydantic_settings import BaseSettings, SettingsConfigDict
+
+BASE_DIR = Path(__file__).resolve().parent.parent
+ENV_FILE = str(BASE_DIR / ".env")
 
 
 class DB(BaseSettings):
@@ -10,7 +15,7 @@ class DB(BaseSettings):
     name: str
     model_config = SettingsConfigDict(
         env_prefix="bookshelf_db_", 
-        env_file="../.env",
+        env_file=ENV_FILE,
         env_file_encoding="utf-8",
         extra="ignore"
     )
@@ -26,7 +31,7 @@ class RABBIT(BaseSettings):
     password: str
     model_config = SettingsConfigDict(
         env_prefix="bookshelf_rabbit_", 
-        env_file="../.env",
+        env_file=ENV_FILE,
         env_file_encoding="utf-8",
         extra="ignore"
     )
@@ -38,7 +43,7 @@ class Settings(BaseSettings):
     db: DB = pydantic.Field(default_factory=DB)
     rabbit: RABBIT = pydantic.Field(default_factory=RABBIT)
     model_config = SettingsConfigDict(
-        env_file="../.env",
+        env_file=ENV_FILE,
         env_file_encoding="utf-8",
         extra="ignore"
     )

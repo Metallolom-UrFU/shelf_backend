@@ -4,7 +4,7 @@ from dramatiq.brokers.rabbitmq import RabbitmqBroker
 from dramatiq.results import Results
 from dramatiq.results.backends import StubBackend
 
-from settings import settings
+from .settings import settings
 
 rabbitmq_broker = RabbitmqBroker(
     url=settings.rabbit.get_broker_url(),

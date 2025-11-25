@@ -5,7 +5,7 @@ from decimal import Decimal
 import sqlalchemy
 from sqlalchemy import orm, ForeignKey, Enum
 from sqlalchemy.dialects import postgresql
-from schemas import UserRole, ShelfStatus, BookInstanceStatus, TransactionStatus, TransactionType, ReservationStatus
+from .schemas import UserRole, ShelfStatus, BookInstanceStatus, TransactionStatus, TransactionType, ReservationStatus
 
 
 class DeclarativeBase(orm.DeclarativeBase):

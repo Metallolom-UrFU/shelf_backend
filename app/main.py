@@ -4,10 +4,10 @@ from fastapi import FastAPI, HTTPException, Depends
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-import tasks
-from db_engine import get_db
-from db_models import Book
-from schemas import BookCreate, BookResponse
+from . import tasks
+from .db_engine import get_db
+from .db_models import Book
+from .schemas import BookCreate, BookResponse
 
 app = FastAPI()
 
