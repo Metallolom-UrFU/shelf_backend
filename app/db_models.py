@@ -93,10 +93,12 @@ class Transaction(BaseWithPK):
     type: orm.Mapped[TransactionType] = orm.mapped_column(Enum(TransactionType), nullable=False)
     
     # Foreign Keys
+    user_id: orm.Mapped[uuid.UUID] = orm.mapped_column(ForeignKey("user.id"), nullable=False)
     shelf_id: orm.Mapped[uuid.UUID] = orm.mapped_column(ForeignKey("shelve.id"), nullable=False)
     book_instance_id: orm.Mapped[uuid.UUID] = orm.mapped_column(ForeignKey("book_instance.id"), nullable=False)
 
     # Relationships
+    user: orm.Mapped["User"] = orm.relationship()
     shelf: orm.Mapped["Shelf"] = orm.relationship(back_populates="transactions")
     book_instance: orm.Mapped["BookInstance"] = orm.relationship(back_populates="transactions")
 
