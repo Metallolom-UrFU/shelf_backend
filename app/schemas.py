@@ -161,6 +161,7 @@ class TransactionBase(BaseSchema):
 
 
 class TransactionCreate(TransactionBase):
+    user_id: UUID
     shelf_id: UUID
     book_instance_id: UUID
 
@@ -174,6 +175,7 @@ class TransactionUpdate(BaseSchema):
 class TransactionResponse(TransactionBase):
     id: UUID
     date: datetime
+    user_id: UUID
     shelf_id: UUID
     book_instance_id: UUID
     created_at: datetime
