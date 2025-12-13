@@ -10,36 +10,40 @@ import qrcode
 from fastapi import APIRouter, HTTPException, Depends
 from sqlalchemy import select
 from sqlalchemy.orm import Session
+from botocore.config import Config
 
 from ..db_engine import get_db
 from ..db_models import Reservation, BookInstance, Transaction
-from ..schemas import ReservationCreate, ReservationResponse, ReservationStatus, BookInstanceStatus, ReservationUpdate, TransactionStatus, TransactionType, TransactionResponse
+from ..schemas import ReservationCreate, ReservationResponse, ReservationStatus, BookInstanceStatus, ReservationUpdate, \
+    TransactionStatus, TransactionType, TransactionResponse
 from ..settings import Settings
 
 router = APIRouter()
 settings = Settings()
 
-def generate_and_upload_qr(pickup_code: str, reservation_id: UUID) -> str:
 
+def generate_and_upload_qr(pickup_code: str, reservation_id: UUID) -> str:
     qr = qrcode.QRCode(version=1, box_size=10, border=5)
     qr.add_data(pickup_code)
     qr.make(fit=True)
     img = qr.make_image(fill_color="black", back_color="white")
-    
 
     img_byte_arr = io.BytesIO()
     img.save(img_byte_arr, format='PNG')
     img_byte_arr.seek(0)
-    
 
     s3_client = boto3.client(
         's3',
         endpoint_url=settings.s3.endpoint_url,
         aws_access_key_id=settings.s3.access_key,
         aws_secret_access_key=settings.s3.secret_key,
-        region_name=settings.s3.region_name
+        region_name=settings.s3.region_name,
+        config=Config(signature_version='s3v4')
     )
-    
+
+    print(settings.s3.access_key,)
+    print(settings.s3.secret_key,)
+
     file_path = f"orders/{reservation_id}.png"
     s3_client.upload_fileobj(
         img_byte_arr,
@@ -47,8 +51,9 @@ def generate_and_upload_qr(pickup_code: str, reservation_id: UUID) -> str:
         file_path,
         ExtraArgs={'ContentType': 'image/png'}
     )
-    
+
     return f"{settings.s3.endpoint_url}/{settings.s3.bucket_name}/{file_path}"
+
 
 @router.post("/reservations", response_model=ReservationResponse)
 def create_reservation(
@@ -163,13 +168,12 @@ def pickup_reservation(
     if not instance:
         raise HTTPException(404, "Book instance not found")
 
-
     transaction = Transaction(
         user_id=reservation.user_id,
         book_instance_id=reservation.book_instance_id,
         shelf_id=instance.shelf_id,
         type=TransactionType.BORROW,
-        status=TransactionStatus.PENDING, #todo: Тут может completed статус
+        status=TransactionStatus.PENDING,  #todo: Тут может completed статус
         date=datetime.now(UTC)
     )
 
@@ -180,5 +184,5 @@ def pickup_reservation(
     session.add(transaction)
     session.commit()
     session.refresh(transaction)
-    
+
     return transaction
