@@ -109,6 +109,8 @@ class Reservation(BaseWithPK):
     status: orm.Mapped[ReservationStatus] = orm.mapped_column(Enum(ReservationStatus), default=ReservationStatus.PENDING)
     date: orm.Mapped[datetime] = orm.mapped_column(sqlalchemy.DateTime, default=datetime.now(UTC))
     exp_date: orm.Mapped[datetime] = orm.mapped_column(sqlalchemy.DateTime, nullable=False)
+    pickup_code: orm.Mapped[str] = orm.mapped_column(sqlalchemy.String, nullable=True)
+    qr_code_url: orm.Mapped[str] = orm.mapped_column(sqlalchemy.String, nullable=True)
     
     # Foreign Keys
     user_id: orm.Mapped[uuid.UUID] = orm.mapped_column(ForeignKey("user.id"), nullable=False)

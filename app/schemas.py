@@ -202,5 +202,7 @@ class ReservationResponse(ReservationBase):
     date: datetime
     user_id: UUID
     book_instance_id: UUID
+    pickup_code: Optional[str] = None
+    qr_code_url: Optional[str] = None
     created_at: datetime
     updated_at: datetime

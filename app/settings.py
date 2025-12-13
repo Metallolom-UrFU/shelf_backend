@@ -39,9 +39,25 @@ class RABBIT(BaseSettings):
         return f"amqp://{self.user}:{self.password}@{self.host}:{self.port}"
 
 
+class S3(BaseSettings):
+    access_key: str = "secret"
+    secret_key: str = "secret"
+    endpoint_url: str = "https://storage.yandexcloud.net"
+    bucket_name: str = "shelf"
+    region_name: str = "ru-central1"
+    
+    model_config = SettingsConfigDict(
+        env_prefix="bookshelf_s3_", 
+        env_file=ENV_FILE,
+        env_file_encoding="utf-8",
+        extra="ignore"
+    )
+
+
 class Settings(BaseSettings):
     db: DB = pydantic.Field(default_factory=DB)
     rabbit: RABBIT = pydantic.Field(default_factory=RABBIT)
+    s3: S3 = pydantic.Field(default_factory=S3)
     model_config = SettingsConfigDict(
         env_file=ENV_FILE,
         env_file_encoding="utf-8",
