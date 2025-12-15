@@ -131,8 +131,12 @@ class BookResponse(BookBase):
     updated_at: datetime
 
 
+class BookWithAvailableInstanceResponse(BookResponse):
+    available_instance: Optional["BookInstanceResponse"] = None
+
+
 class ShelfWithBooksResponse(ShelfResponse):
-    books: List[BookResponse]
+    books: List[BookWithAvailableInstanceResponse]
 
 
 class BookInstanceBase(BaseSchema):

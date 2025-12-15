@@ -7,7 +7,7 @@ from sqlalchemy.orm import Session, joinedload
 
 from ..db_engine import get_db
 from ..db_models import Shelf, BookInstance, Book
-from ..schemas import ShelfCreate, ShelfResponse, ShelfUpdate, BookInstanceResponse, BookInstanceWithBookResponse, ShelfWithBooksResponse
+from ..schemas import ShelfCreate, ShelfResponse, ShelfUpdate, BookInstanceResponse, BookInstanceWithBookResponse, ShelfWithBooksResponse, BookWithAvailableInstanceResponse, BookInstanceStatus
 
 router = APIRouter()
 
@@ -52,10 +52,29 @@ def get_shelf(shelf_id: UUID, session: Session = Depends(get_db)):
         .where(BookInstance.shelf_id == shelf_id)
         .distinct()
     ).scalars().all()
+
+    # Получаем доступные экземпляры на полке
+    available_instances = session.execute(
+        select(BookInstance)
+        .where(
+            BookInstance.shelf_id == shelf_id,
+            BookInstance.status == BookInstanceStatus.AVAILABLE
+        )
+    ).scalars().all()
+    
+    # Map book_id -> instance (берем первый попавшийся)
+    available_map = {inst.book_id: inst for inst in available_instances}
+
+    books_with_instances = []
+    for book in books:
+        book_resp = BookWithAvailableInstanceResponse.model_validate(book)
+
+        book_resp.available_instance = available_map.get(book.id)
+        books_with_instances.append(book_resp)
     
     return ShelfWithBooksResponse(
         **shelf.__dict__,
-        books=books
+        books=books_with_instances
     )
 
 
