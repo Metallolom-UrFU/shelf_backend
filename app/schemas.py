@@ -102,6 +102,10 @@ class ShelfResponse(ShelfBase):
 
 
 class BookBase(BaseSchema):
+    updated_at: datetime
+
+
+class BookBase(BaseSchema):
     name: str
     author: str
     description: Optional[str] = None
@@ -125,6 +129,10 @@ class BookResponse(BookBase):
     id: UUID
     created_at: datetime
     updated_at: datetime
+
+
+class ShelfWithBooksResponse(ShelfResponse):
+    books: List[BookResponse]
 
 
 class BookInstanceBase(BaseSchema):

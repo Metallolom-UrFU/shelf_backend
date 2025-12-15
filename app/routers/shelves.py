@@ -6,8 +6,8 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session, joinedload
 
 from ..db_engine import get_db
-from ..db_models import Shelf, BookInstance
-from ..schemas import ShelfCreate, ShelfResponse, ShelfUpdate, BookInstanceResponse, BookInstanceWithBookResponse
+from ..db_models import Shelf, BookInstance, Book
+from ..schemas import ShelfCreate, ShelfResponse, ShelfUpdate, BookInstanceResponse, BookInstanceWithBookResponse, ShelfWithBooksResponse
 
 router = APIRouter()
 
@@ -38,13 +38,25 @@ def create_shelf(
     return shelf
 
 
-@router.get("/shelves/{shelf_id}", response_model=ShelfResponse)
+@router.get("/shelves/{shelf_id}", response_model=ShelfWithBooksResponse)
 def get_shelf(shelf_id: UUID, session: Session = Depends(get_db)):
-    """Получить информацию о полке"""
+    """Получить информацию о полке и список уникальных книг на ней"""
     shelf = session.get(Shelf, shelf_id)
     if not shelf:
         raise HTTPException(status_code=404, detail="Shelf not found")
-    return shelf
+    
+    # Получаем уникальные книги на полке
+    books = session.execute(
+        select(Book)
+        .join(BookInstance)
+        .where(BookInstance.shelf_id == shelf_id)
+        .distinct()
+    ).scalars().all()
+    
+    return ShelfWithBooksResponse(
+        **shelf.__dict__,
+        books=books
+    )
 
 
 @router.delete("/shelves/{shelf_id}", status_code=204)
