@@ -41,9 +41,6 @@ def generate_and_upload_qr(pickup_code: str, reservation_id: UUID) -> str:
         config=Config(signature_version='s3v4')
     )
 
-    print(settings.s3.access_key,)
-    print(settings.s3.secret_key,)
-
     file_path = f"orders/{reservation_id}.png"
     s3_client.upload_fileobj(
         img_byte_arr,

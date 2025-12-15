@@ -6,8 +6,8 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from ..db_engine import get_db
-from ..db_models import Shelf
-from ..schemas import ShelfCreate, ShelfResponse, ShelfUpdate
+from ..db_models import Shelf, BookInstance
+from ..schemas import ShelfCreate, ShelfResponse, ShelfUpdate, BookInstanceResponse
 
 router = APIRouter()
 
@@ -78,3 +78,15 @@ def update_shelf(
     session.commit()
     session.refresh(shelf)
     return shelf
+
+
+@router.get("/shelves/{shelf_id}/books", response_model=List[BookInstanceResponse])
+def list_shelf_books(shelf_id: UUID, session: Session = Depends(get_db)):
+    """Список книг на полке"""
+    shelf = session.get(Shelf, shelf_id)
+    if not shelf:
+        raise HTTPException(status_code=404, detail="Shelf not found")
+    
+    return session.execute(
+        select(BookInstance).where(BookInstance.shelf_id == shelf_id)
+    ).scalars().all()
