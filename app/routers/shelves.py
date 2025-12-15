@@ -3,11 +3,11 @@ from uuid import UUID
 
 from fastapi import APIRouter, HTTPException, Depends
 from sqlalchemy import select
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, joinedload
 
 from ..db_engine import get_db
 from ..db_models import Shelf, BookInstance
-from ..schemas import ShelfCreate, ShelfResponse, ShelfUpdate, BookInstanceResponse
+from ..schemas import ShelfCreate, ShelfResponse, ShelfUpdate, BookInstanceResponse, BookInstanceWithBookResponse
 
 router = APIRouter()
 
@@ -80,7 +80,7 @@ def update_shelf(
     return shelf
 
 
-@router.get("/shelves/{shelf_id}/books", response_model=List[BookInstanceResponse])
+@router.get("/shelves/{shelf_id}/books", response_model=List[BookInstanceWithBookResponse])
 def list_shelf_books(shelf_id: UUID, session: Session = Depends(get_db)):
     """Список книг на полке"""
     shelf = session.get(Shelf, shelf_id)
@@ -88,5 +88,7 @@ def list_shelf_books(shelf_id: UUID, session: Session = Depends(get_db)):
         raise HTTPException(status_code=404, detail="Shelf not found")
     
     return session.execute(
-        select(BookInstance).where(BookInstance.shelf_id == shelf_id)
+        select(BookInstance)
+        .options(joinedload(BookInstance.book))
+        .where(BookInstance.shelf_id == shelf_id)
     ).scalars().all()

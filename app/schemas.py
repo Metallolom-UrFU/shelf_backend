@@ -154,6 +154,10 @@ class BookInstanceResponse(BookInstanceBase):
     updated_at: datetime
 
 
+class BookInstanceWithBookResponse(BookInstanceResponse):
+    book: BookResponse
+
+
 class TransactionBase(BaseSchema):
     type: TransactionType
     status: TransactionStatus = TransactionStatus.PENDING
