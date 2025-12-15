@@ -102,10 +102,6 @@ class ShelfResponse(ShelfBase):
 
 
 class BookBase(BaseSchema):
-    updated_at: datetime
-
-
-class BookBase(BaseSchema):
     name: str
     author: str
     description: Optional[str] = None
@@ -222,3 +218,13 @@ class ReservationResponse(ReservationBase):
     qr_code_url: Optional[str] = None
     created_at: datetime
     updated_at: datetime
+
+
+class BookShortInfo(BaseSchema):
+    name: str
+    author: str
+    cover_image_url: Optional[str] = None
+
+
+class ReservationWithBooksResponse(ReservationResponse):
+    book: BookShortInfo

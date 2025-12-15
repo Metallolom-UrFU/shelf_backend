@@ -9,13 +9,13 @@ import boto3
 import qrcode
 from fastapi import APIRouter, HTTPException, Depends
 from sqlalchemy import select
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, joinedload
 from botocore.config import Config
 
 from ..db_engine import get_db
 from ..db_models import Reservation, BookInstance, Transaction
 from ..schemas import ReservationCreate, ReservationResponse, ReservationStatus, BookInstanceStatus, ReservationUpdate, \
-    TransactionStatus, TransactionType, TransactionResponse
+    TransactionStatus, TransactionType, TransactionResponse, ReservationWithBooksResponse
 from ..settings import Settings
 
 router = APIRouter()
@@ -91,15 +91,25 @@ def create_reservation(
     return reservation
 
 
-@router.get("/users/{user_id}/reservations", response_model=List[ReservationResponse])
+@router.get("/users/{user_id}/reservations", response_model=List[ReservationWithBooksResponse])
 def list_user_reservations(user_id: UUID, session: Session = Depends(get_db)):
     """Список активных бронирований пользователя"""
-    return session.execute(
-        select(Reservation).where(
+    reservations = session.execute(
+        select(Reservation)
+        .options(joinedload(Reservation.book_instance).joinedload(BookInstance.book))
+        .where(
             Reservation.user_id == user_id,
             Reservation.status == ReservationStatus.PENDING
         )
     ).scalars().all()
+
+    response = []
+    for res in reservations:
+        response.append(ReservationWithBooksResponse(
+            **res.__dict__,
+            book=res.book_instance.book
+        ))
+    return response
 
 
 @router.delete("/reservations/{reservation_id}", status_code=204)
