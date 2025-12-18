@@ -131,11 +131,11 @@ def create_book_instance(
         raise HTTPException(status_code=404, detail="Shelf not found")
 
     existing_instance = session.execute(
-        select(BookInstance).where(BookInstance.rfid_tag == instance_data.rfid_tag)
+        select(BookInstance).where(BookInstance.book_code == instance_data.book_code)
     ).scalar_one_or_none()
 
     if existing_instance:
-        raise HTTPException(status_code=400, detail="RFID tag already registered")
+        raise HTTPException(status_code=400, detail="book code already registered")
 
     #todo: Проверять вместимость полки перед добавлением
 
@@ -143,7 +143,7 @@ def create_book_instance(
         book_id=instance_data.book_id,
         shelf_id=instance_data.shelf_id,
         shelf_pos=instance_data.shelf_pos,
-        rfid_tag=instance_data.rfid_tag,
+        book_code=instance_data.book_code,
         status=instance_data.status
     )
 
@@ -178,13 +178,13 @@ def update_book_instance(
 
     update_data = instance_update.model_dump(exclude_unset=True)
     
-    # Если обновляется rfid_tag, проверяем уникальность
-    if "rfid_tag" in update_data and update_data["rfid_tag"] != instance.rfid_tag:
+    # Если обновляется book_code, проверяем уникальность
+    if "book_code" in update_data and update_data["book_code"] != instance.book_code:
         existing = session.execute(
-            select(BookInstance).where(BookInstance.rfid_tag == update_data["rfid_tag"])
+            select(BookInstance).where(BookInstance.book_code == update_data["book_code"])
         ).scalar_one_or_none()
         if existing:
-            raise HTTPException(status_code=400, detail="RFID tag already registered")
+            raise HTTPException(status_code=400, detail="book code already registered")
 
     for key, value in update_data.items():
         setattr(instance, key, value)
