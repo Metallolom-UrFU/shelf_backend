@@ -138,7 +138,7 @@ class ShelfWithBooksResponse(ShelfResponse):
 class BookInstanceBase(BaseSchema):
     status: BookInstanceStatus = BookInstanceStatus.AVAILABLE
     shelf_pos: Decimal
-    rfid_tag: str
+    book_code: str
 
 
 class BookInstanceCreate(BookInstanceBase):
@@ -149,7 +149,7 @@ class BookInstanceCreate(BookInstanceBase):
 class BookInstanceUpdate(BaseSchema):
     status: Optional[BookInstanceStatus] = None
     shelf_pos: Optional[Decimal] = None
-    rfid_tag: Optional[str] = None
+    book_code: Optional[str] = None
     book_id: Optional[UUID] = None
     shelf_id: Optional[UUID] = None
 

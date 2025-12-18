@@ -71,7 +71,7 @@ class BookInstance(BaseWithPK):
 
     status: orm.Mapped[BookInstanceStatus] = orm.mapped_column(Enum(BookInstanceStatus), default=BookInstanceStatus.AVAILABLE)
     shelf_pos: orm.Mapped[Decimal] = orm.mapped_column(sqlalchemy.Numeric(10, 2), nullable=False)
-    rfid_tag: orm.Mapped[str] = orm.mapped_column(sqlalchemy.String, unique=True, nullable=False)
+    book_code: orm.Mapped[str] = orm.mapped_column(sqlalchemy.String, unique=True, nullable=False)
     
     # Foreign Keys
     book_id: orm.Mapped[uuid.UUID] = orm.mapped_column(ForeignKey("book.id"), nullable=False)

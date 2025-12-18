@@ -7,8 +7,8 @@ import io
 
 import boto3
 import qrcode
-from fastapi import APIRouter, HTTPException, Depends
-from sqlalchemy import select
+from fastapi import APIRouter, HTTPException, Depends, Body
+from sqlalchemy import select, desc
 from sqlalchemy.orm import Session, joinedload
 from botocore.config import Config
 
@@ -193,3 +193,91 @@ def pickup_reservation(
     session.refresh(transaction)
 
     return transaction
+
+
+@router.post("/reservations/return", response_model=TransactionResponse)
+def return_book(
+        book_code: str = Body(...),
+        shelf_id: UUID = Body(...),
+        session: Session = Depends(get_db)
+):
+    """Вернуть книгу"""
+    instance = session.execute(
+        select(BookInstance).where(BookInstance.book_code == book_code)
+    ).scalar_one_or_none()
+
+    if not instance:
+        raise HTTPException(404, "Book instance not found")
+
+    last_borrow = session.execute(
+        select(Transaction).where(
+            Transaction.book_instance_id == instance.id,
+            Transaction.type == TransactionType.BORROW,
+            Transaction.status == TransactionStatus.PENDING
+        ).order_by(desc(Transaction.date))
+    ).scalar_one_or_none()
+
+    if not last_borrow:
+        raise HTTPException(400, "Book was not borrowed")
+
+    last_borrow.status = TransactionStatus.COMPLETED
+
+    return_tx = Transaction(
+        user_id=last_borrow.user_id,
+        shelf_id=shelf_id,
+        book_instance_id=instance.id,
+        type=TransactionType.RETURN,
+        status=TransactionStatus.COMPLETED
+    )
+
+    instance.status = BookInstanceStatus.AVAILABLE
+    instance.shelf_id = shelf_id
+
+    session.add(return_tx)
+    session.commit()
+    session.refresh(return_tx)
+    return return_tx
+
+@router.post("/reservations/return-quick", response_model=TransactionResponse)
+def return_book_quick(
+        book_code: str = Body(..., embed=True),
+        session: Session = Depends(get_db)
+):
+    """Вернуть книгу без указания полки (возврат на прежнее место)"""
+    instance = session.execute(
+        select(BookInstance).where(BookInstance.book_code == book_code)
+    ).scalar_one_or_none()
+
+    if not instance:
+        raise HTTPException(404, "Book instance not found")
+
+    last_borrow = session.execute(
+        select(Transaction).where(
+            Transaction.book_instance_id == instance.id,
+            Transaction.type == TransactionType.BORROW,
+            Transaction.status == TransactionStatus.PENDING
+        ).order_by(desc(Transaction.date))
+    ).scalar_one_or_none()
+
+    if not last_borrow:
+        raise HTTPException(400, "Book was not borrowed")
+
+    last_borrow.status = TransactionStatus.COMPLETED
+
+    # Используем текущую полку книги (откуда взяли)
+    return_tx = Transaction(
+        user_id=last_borrow.user_id,
+        shelf_id=instance.shelf_id,
+        book_instance_id=instance.id,
+        type=TransactionType.RETURN,
+        status=TransactionStatus.COMPLETED
+    )
+
+    instance.status = BookInstanceStatus.AVAILABLE
+    # instance.shelf_id не меняем, так как возвращаем туда же
+
+    session.add(return_tx)
+    session.commit()
+    session.refresh(return_tx)
+    return return_tx
+
