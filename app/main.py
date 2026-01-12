@@ -12,13 +12,14 @@ from .schemas import (
     TransactionResponse, BookInstanceStatus, TransactionType,
     TransactionStatus, ReservationStatus
 )
-from .routers import books, shelves, reservations
+from .routers import books, shelves, reservations, users
 
 app = FastAPI()
 
 app.include_router(books.router, tags=["Books"])
 app.include_router(shelves.router, tags=["Shelves"])
 app.include_router(reservations.router, tags=["Reservations"])
+app.include_router(users.router, tags=["Users"])
 
 
 @app.post("/test-task")

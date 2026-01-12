@@ -13,10 +13,11 @@ from sqlalchemy.orm import Session, joinedload
 from botocore.config import Config
 
 from ..db_engine import get_db
-from ..db_models import Reservation, BookInstance, Transaction
+from ..db_models import Reservation, BookInstance, Transaction, User
 from ..schemas import ReservationCreate, ReservationResponse, ReservationStatus, BookInstanceStatus, ReservationUpdate, \
-    TransactionStatus, TransactionType, TransactionResponse, ReservationWithBooksResponse
+    TransactionStatus, TransactionType, TransactionResponse, ReservationWithBooksResponse, UserRole
 from ..settings import Settings
+from ..security import get_current_user
 
 router = APIRouter()
 settings = Settings()
@@ -55,7 +56,8 @@ def generate_and_upload_qr(pickup_code: str, reservation_id: UUID) -> str:
 @router.post("/reservations", response_model=ReservationResponse)
 def create_reservation(
         reservation_data: ReservationCreate,
-        session: Session = Depends(get_db)
+        session: Session = Depends(get_db),
+        current_user: User = Depends(get_current_user)
 ):
     """Зарезервировать экземпляр книги"""
     instance = session.get(BookInstance, reservation_data.book_instance_id)
@@ -67,7 +69,7 @@ def create_reservation(
     pickup_code = ''.join(secrets.choice(string.digits) for _ in range(6))
 
     reservation = Reservation(
-        user_id=reservation_data.user_id,
+        user_id=current_user.id,
         book_instance_id=reservation_data.book_instance_id,
         exp_date=reservation_data.exp_date,
         status=ReservationStatus.PENDING,
@@ -91,9 +93,33 @@ def create_reservation(
     return reservation
 
 
+@router.get("/reservations/my", response_model=List[ReservationWithBooksResponse])
+def list_my_reservations(session: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
+    """Список активных бронирований текущего пользователя"""
+    reservations = session.execute(
+        select(Reservation)
+        .options(joinedload(Reservation.book_instance).joinedload(BookInstance.book))
+        .where(
+            Reservation.user_id == current_user.id,
+            Reservation.status == ReservationStatus.PENDING
+        )
+    ).scalars().all()
+
+    response = []
+    for res in reservations:
+        response.append(ReservationWithBooksResponse(
+            **res.__dict__,
+            book=res.book_instance.book
+        ))
+    return response
+
+
 @router.get("/users/{user_id}/reservations", response_model=List[ReservationWithBooksResponse])
-def list_user_reservations(user_id: UUID, session: Session = Depends(get_db)):
+def list_user_reservations(user_id: UUID, session: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
     """Список активных бронирований пользователя"""
+    if current_user.id != user_id and current_user.role != UserRole.ADMIN:
+        raise HTTPException(status_code=403, detail="Not authorized")
+
     reservations = session.execute(
         select(Reservation)
         .options(joinedload(Reservation.book_instance).joinedload(BookInstance.book))
@@ -113,11 +139,14 @@ def list_user_reservations(user_id: UUID, session: Session = Depends(get_db)):
 
 
 @router.delete("/reservations/{reservation_id}", status_code=204)
-def delete_reservation(reservation_id: UUID, session: Session = Depends(get_db)):
+def delete_reservation(reservation_id: UUID, session: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
     """Удалить бронирование"""
     reservation = session.get(Reservation, reservation_id)
     if not reservation:
         raise HTTPException(status_code=404, detail="Reservation not found")
+
+    if reservation.user_id != current_user.id and current_user.role != UserRole.ADMIN:
+        raise HTTPException(status_code=403, detail="Not authorized")
 
     if reservation.status == ReservationStatus.PENDING:
         instance = session.get(BookInstance, reservation.book_instance_id)
@@ -133,12 +162,16 @@ def delete_reservation(reservation_id: UUID, session: Session = Depends(get_db))
 def update_reservation(
         reservation_id: UUID,
         reservation_update: ReservationUpdate,
-        session: Session = Depends(get_db)
+        session: Session = Depends(get_db),
+        current_user: User = Depends(get_current_user)
 ):
     """Обновить бронирование"""
     reservation = session.get(Reservation, reservation_id)
     if not reservation:
         raise HTTPException(status_code=404, detail="Reservation not found")
+
+    if reservation.user_id != current_user.id and current_user.role != UserRole.ADMIN:
+        raise HTTPException(status_code=403, detail="Not authorized")
 
     update_data = reservation_update.model_dump(exclude_unset=True)
     for key, value in update_data.items():

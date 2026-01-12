@@ -53,11 +53,25 @@ class S3(BaseSettings):
         extra="ignore"
     )
 
+class SECURITY(BaseSettings):
+    SECRET_KEY: str
+    ALGORITHM: str
+    ACCESS_TOKEN_EXPIRE_MINUTES: int
+
+    model_config = SettingsConfigDict(
+        env_prefix="bookshelf_security_",
+        env_file=ENV_FILE,
+        env_file_encoding="utf-8",
+        extra="ignore"
+    )
+
 
 class Settings(BaseSettings):
     db: DB = pydantic.Field(default_factory=DB)
     rabbit: RABBIT = pydantic.Field(default_factory=RABBIT)
     s3: S3 = pydantic.Field(default_factory=S3)
+    security: SECURITY = pydantic.Field(default_factory=SECURITY)
+
     model_config = SettingsConfigDict(
         env_file=ENV_FILE,
         env_file_encoding="utf-8",
