@@ -95,13 +95,13 @@ def create_reservation(
 
 @router.get("/reservations/my", response_model=List[ReservationWithBooksResponse])
 def list_my_reservations(session: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
-    """Список активных бронирований текущего пользователя"""
+    """Список бронирований текущего пользователя"""
     reservations = session.execute(
         select(Reservation)
         .options(joinedload(Reservation.book_instance).joinedload(BookInstance.book))
         .where(
             Reservation.user_id == current_user.id,
-            Reservation.status == ReservationStatus.PENDING
+            # Reservation.status == ReservationStatus.PENDING
         )
     ).scalars().all()
 
@@ -116,7 +116,7 @@ def list_my_reservations(session: Session = Depends(get_db), current_user: User 
 
 @router.get("/users/{user_id}/reservations", response_model=List[ReservationWithBooksResponse])
 def list_user_reservations(user_id: UUID, session: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
-    """Список активных бронирований пользователя"""
+    """Список бронирований пользователя"""
     if current_user.id != user_id and current_user.role != UserRole.ADMIN:
         raise HTTPException(status_code=403, detail="Not authorized")
 
@@ -125,7 +125,7 @@ def list_user_reservations(user_id: UUID, session: Session = Depends(get_db), cu
         .options(joinedload(Reservation.book_instance).joinedload(BookInstance.book))
         .where(
             Reservation.user_id == user_id,
-            Reservation.status == ReservationStatus.PENDING
+            # Reservation.status == ReservationStatus.PENDING
         )
     ).scalars().all()
 
