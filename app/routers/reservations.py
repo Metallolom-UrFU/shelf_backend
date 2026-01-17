@@ -217,7 +217,7 @@ def pickup_reservation(
         date=datetime.now(UTC)
     )
 
-    reservation.status = ReservationStatus.COMPLETED
+    reservation.status = ReservationStatus.CONFIRMED
 
     instance.status = BookInstanceStatus.BORROWED
 
